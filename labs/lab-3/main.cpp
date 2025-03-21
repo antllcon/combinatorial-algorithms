@@ -16,6 +16,13 @@ int main()
 			{ 0, 0, 0, 0, 0, 1, 0, 0, 1 },
 			{ 0, 0, 1, 0, 0, 0, 0, 0, 0 }
 		};
+
+		Graph graph(matrix, true);
+		graph.DFSWithTimestamps();
+		graph.Print();
+		Graph transGraph = graph.GetTransposedGraph();
+		transGraph.DFSWithTimestamps();
+		graph.Print();
 	}
 	catch (const std::exception& errorMessage)
 	{

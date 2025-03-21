@@ -1,6 +1,11 @@
 #include "graph.h"
 #include <fstream>
 
+std::vector<TarjanNode> Graph::CreateTarjanCopy() const
+{
+	return std::vector<TarjanNode>(vertexCount);
+}
+
 Graph::Graph(int numberVertices, bool isDirected)
 	: vertexCount(numberVertices)
 	, matrix(numberVertices, std::vector<int>(numberVertices, 0))
@@ -130,13 +135,71 @@ Graph Graph::GetTransposedGraph() const
 	return transposedGraph;
 }
 
+Components Graph::GetStronglyComponentsTarjan()
+{
+	Components components;
+	TarjanMatrix matrix = CreateTarjanCopy();
+	std::stack<int> stack;
+	int index = 0;
+
+	for (size_t vertex = 0; vertex < vertexCount; vertex++)
+	{
+		if (matrix[vertex].index == -1)
+		{
+			StrongConnect(vertex, matrix, stack, index, components);
+		}
+	}
+	return components;
+}
+
+void Graph::StrongConnect(int currentVertex, TarjanMatrix& matrix, std::stack<int>& stack, int& index, Components& components)
+{
+	matrix[currentVertex].index = matrix[currentVertex].lowLink = index++;
+	stack.push(currentVertex);
+	matrix[currentVertex].onStack = true;
+
+	// Вот тут подумать
+	for (size_t nextVertex = 0; nextVertex < vertexCount; nextVertex++)
+	{
+		if (this->matrix[currentVertex][nextVertex] == 0)
+		{
+			continue;
+		}
+
+		if (matrix[nextVertex].index == -1)
+		{
+			StrongConnect(nextVertex, matrix, stack, index, components);
+			matrix[currentVertex].lowLink = std::min(matrix[currentVertex].lowLink, matrix[nextVertex].lowLink);
+		}
+		else if (matrix[nextVertex].onStack)
+		{
+			matrix[currentVertex].lowLink = std::min(matrix[currentVertex].lowLink, matrix[nextVertex].index);
+		}
+	}
+
+	// Проверка чего-то
+	if (matrix[currentVertex].lowLink == matrix[currentVertex].index)
+	{
+		Component strongComponent;
+		int nextVertex;
+		do
+		{
+			nextVertex = stack.top();
+			stack.pop();
+			matrix[nextVertex].onStack = false;
+			strongComponent.push_back(nextVertex);
+		} while (nextVertex != currentVertex);
+		components.push_back(strongComponent);
+	}
+}
+
 std::ostream& operator<<(std::ostream& os, const Graph& graph)
 {
 	for (const auto& row : graph.matrix)
 	{
 		for (int value : row)
 		{
-			os << value << '\t';
+			os << value << ' ';
 		}
 		os << '\n';
 	}
