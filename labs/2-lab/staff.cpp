@@ -102,4 +102,4 @@ int main()
 
 	cout << "No combination of workers covers all skills." << endl;
 	return EXIT_SUCCESS;
-}
+}The IDE is running with enabled input methods that can cause freezes. Please consider to disable input methods if you don't really use them.
