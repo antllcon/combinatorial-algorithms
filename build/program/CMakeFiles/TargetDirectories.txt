@@ -1,3 +1,0 @@
-/projects/combinatorial-algorithms/build/program/CMakeFiles/start.dir
-/projects/combinatorial-algorithms/build/program/CMakeFiles/edit_cache.dir
-/projects/combinatorial-algorithms/build/program/CMakeFiles/rebuild_cache.dir

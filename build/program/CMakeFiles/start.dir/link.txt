@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/start.dir/start.cpp.o "CMakeFiles/start.dir/class-graph/graph.cpp.o" -o start 
