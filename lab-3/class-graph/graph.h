@@ -58,7 +58,7 @@ public:
 	Graph(const AdjacencyMatrix& adjacencyMatrix, bool isDirected = false);
 
 	void AddEdge(int from, int to, int value = 1);
-	void RemoveEdge(int x, int y);
+	void RemoveEdge(int from, int to);
 	Graph GetInvertGraph() const;
 	const AdjacencyMatrix& GetMatrix(void) const;
 

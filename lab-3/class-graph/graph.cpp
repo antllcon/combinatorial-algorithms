@@ -57,6 +57,8 @@ void Graph::AssertIsCoordsInRange(int x, int y) const
 
 void Graph::AddEdge(int from, int to, int value)
 {
+	from = from - 1;
+	to = to - 1;
 	AssertIsCoordsInRange(from, to);
 	matrix[from][to] = value;
 	if (!isDirected)
@@ -65,13 +67,15 @@ void Graph::AddEdge(int from, int to, int value)
 	}
 }
 
-void Graph::RemoveEdge(int x, int y)
+void Graph::RemoveEdge(int from, int to)
 {
-	AssertIsCoordsInRange(x, y);
-	matrix[x][y] = 0;
+	from = from - 1;
+	to = to - 1;
+	AssertIsCoordsInRange(from, to);
+	matrix[from][to] = 0;
 	if (!isDirected)
 	{
-		matrix[y][x] = 0;
+		matrix[from][to] = 0;
 	}
 }
 
@@ -192,7 +196,7 @@ std::ostream& operator<<(std::ostream& os, const Components& components)
 	{
 		for (int value : component)
 		{
-			os << value << ' ';
+			os << value + 1 << ' ';
 		}
 		os << '\n';
 	}
