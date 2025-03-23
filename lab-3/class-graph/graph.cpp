@@ -194,11 +194,12 @@ std::ostream& operator<<(std::ostream& os, const Components& components)
 {
 	for (const auto& component : components)
 	{
+		os << "[ ";
 		for (int value : component)
 		{
 			os << value + 1 << ' ';
 		}
-		os << '\n';
+		os << " ]\n";
 	}
 	return os;
 }
