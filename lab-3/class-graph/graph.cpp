@@ -3,17 +3,13 @@
 #include <fstream>
 #include <numeric>
 
-TarjanMatrix Graph::CreateTarjanCopy() const { return TarjanMatrix(vertexCount); }
-
 TimeMatrix Graph::CreateTimeCopy() const { return TimeMatrix(vertexCount); }
 
 Component Graph::ReverseSortExitTime(TimeMatrix& matrix) const
 {
 	Component vertexes(vertexCount);
-
 	std::iota(vertexes.begin(), vertexes.end(), 0);
 	std::sort(vertexes.begin(), vertexes.end(), [&](int a, int b) { return matrix[a].exitTime > matrix[b].exitTime; });
-
 	return vertexes;
 }
 
@@ -179,7 +175,7 @@ Components Graph::DFSWithCollectComponents(const Component& sortedVertexes, Adja
 
 std::ostream& operator<<(std::ostream& os, const Graph& graph)
 {
-	for (const auto& row : graph.matrix)
+	for (const auto& row : graph.GetMatrix())
 	{
 		for (int value : row)
 		{
@@ -199,7 +195,7 @@ std::ostream& operator<<(std::ostream& os, const Components& components)
 		{
 			os << value + 1 << ' ';
 		}
-		os << " ]\n";
+		os << "]\n";
 	}
 	return os;
 }
