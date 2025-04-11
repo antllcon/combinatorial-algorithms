@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.10)
+project(MyGoogleTest)
+find_package(GTest REQUIRED) 
+add_executable(unit-test main.cpp ../class-graph/Graph.cpp ../class-lay/Lay.cpp unit-test.cpp)
+target_link_libraries(unit-test GTest::gtest GTest::gtest_main)
