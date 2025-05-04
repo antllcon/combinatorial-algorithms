@@ -3,18 +3,27 @@
 
 int main()
 {
-	AdjacencyMatrix matrix = {{0, 1, 1}, {1, 0, 1}, {1, 1, 0}};
-	Graph graph(matrix);
-	VertexList list = graph.GetCycle(graph.GetMatrix());
+	std::string fileName = "../test/data.txt";
 
-	std::cout << "Цикл в графе: ";
-
-	for (auto value : list)
+	try
 	{
-		std::cout << value << ' ';
-	}
+		FileToGraphAdapter adapter;
+		Graph graph(adapter.ConvertEdgeListToMatrix(fileName));
 
-	std::cout << "\n";
+		if (graph.IsPlanarGraph())
+		{
+			std::cout << "[Yes]" << std::endl;
+		}
+		else
+		{
+			std::cout << "[No]" << std::endl;
+		}
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Error: " << e.what() << std::endl;
+		return EXIT_FAILURE;
+	}
 
 	return EXIT_SUCCESS;
 }

@@ -1,5 +1,6 @@
 #include "Graph.h"
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <queue>
@@ -26,6 +27,7 @@ VertexList Graph::GetCycle(const AdjacencyMatrix& currentMatrix)
 
 	for (int i = 0; i < vertexCount; ++i)
 	{
+
 		if (list[i] != color::white)
 		{
 			continue;
@@ -59,18 +61,6 @@ bool Graph::IsPlanarGraph()
 	// Добавление цикла в укладку
 	lay.AddInitialCycle(cycle);
 
-	std::cout << "Текущие грани укладки:\n";
-	for (auto line : lay.GetFaces())
-	{
-		std::cout << '[';
-		for (auto val : line)
-		{
-			std::cout << val + 1 << ' ';
-		}
-		std::cout << ']' << std::endl;
-	}
-	std::cout << std::endl;
-
 	// Перемещаем первый цикл в список
 	VertexList planarGraph = cycle;
 	RemoveCycleEdges(workGraph, cycle);
@@ -78,26 +68,19 @@ bool Graph::IsPlanarGraph()
 	std::cout << "Матрица смежности после удаления цикла:\n";
 	for (auto line : workGraph)
 	{
-		std::cout << '[';
 		for (auto val : line)
 		{
 			std::cout << val << ' ';
 		}
-		std::cout << ']' << std::endl;
+		std::cout << '\n';
 	}
 	std::cout << std::endl;
 
-	std::cout << "Список вершин (уложенных из цикла):\n";
-	for (auto val : planarGraph)
-	{
-		std::cout << val + 1 << ' ';
-	}
-	std::cout << std::endl << std::endl;
 	while (true)
 	{
-		std::cout << " ============== \n\n";
+		std::cout << "==============\n\n";
 
-		// Поиск контактных вершин
+		// Поиск контактных вершин - перенести в получение сегментов
 		VertexList contacts = FindContactVertices(workGraph, planarGraph);
 
 		// TODO: вынести проверку контактных вершин
@@ -112,16 +95,14 @@ bool Graph::IsPlanarGraph()
 		std::cout << std::endl << std::endl;
 
 		// Отладка workGraph
-
 		std::cout << "Отладка workGraph:\n";
 		for (auto line : workGraph)
 		{
-			std::cout << '[';
 			for (auto val : line)
 			{
 				std::cout << val << ' ';
 			}
-			std::cout << ']' << std::endl;
+			std::cout << std::endl;
 		}
 		std::cout << std::endl;
 
@@ -140,7 +121,7 @@ bool Graph::IsPlanarGraph()
 			{
 				std::cout << val + 1 << ' ';
 			}
-			std::cout << "контактные вершины: ";
+			std::cout << "контактные вершина(ы): ";
 			for (auto val : line.contacts)
 			{
 				std::cout << val + 1 << ' ';
@@ -270,27 +251,25 @@ void Graph::AddPath(VertexList& planarGraph, const VertexList& path)
 		}
 	}
 }
+
 VertexList Graph::FindContactVertices(const AdjacencyMatrix& workGraph, const VertexList& planarGraph)
 {
-	VertexList contactVertices;
 	std::unordered_set<int> uniqueContacts;
+	std::unordered_set<int> planarSet(planarGraph.begin(), planarGraph.end());
 
-	for (int vertex : planarGraph)
+	for (size_t i = 0; i < workGraph.size(); ++i)
 	{
 		for (size_t j = 0; j < workGraph.size(); ++j)
 		{
-			if (workGraph[vertex][j] || workGraph[j][vertex])
+			if (workGraph[i][j] && planarSet.count(j))
 			{
-				if (uniqueContacts.insert(vertex).second)
-				{
-					contactVertices.push_back(vertex);
-				}
+				uniqueContacts.insert(j);
 				break;
 			}
 		}
 	}
 
-	return contactVertices;
+	return VertexList(uniqueContacts.begin(), uniqueContacts.end());
 }
 
 SegmentList Graph::FindSegments(const AdjacencyMatrix& workGraph, const VertexList& contacts)
@@ -374,12 +353,19 @@ void Graph::RemoveCycleEdges(AdjacencyMatrix& graph, const VertexList& cycle)
 	{
 		int u = cycle[i];
 		int v = cycle[i + 1];
-		graph[u][v] = graph[v][u] = 0;
+		if (graph[u][v] == 1)
+		{
+			graph[u][v] = graph[v][u] = 0;
+		}
 	}
 
 	int last = cycle.back();
 	int first = cycle.front();
 	graph[last][first] = graph[first][last] = 0;
+	if (graph[last][first] == 1)
+	{
+		graph[last][first] = graph[first][last] = 0;
+	}
 }
 
 Segment Graph::FindSegmentWithMinFaces(const SegmentList& segments, const Lay& lay)
@@ -524,5 +510,79 @@ void Graph::Print() const
 			std::cout << matrix[i][j] << " ";
 		}
 		std::cout << "\n";
+	}
+}
+
+Graph FileToGraphAdapter::ConvertEdgeListToMatrix(const std::string& fileName)
+{
+	std::ifstream file(fileName);
+	AssertIsFileOpen(file, fileName);
+	AssertIsStreamCorrect(file);
+
+	size_t matrixSize = SafeRead<size_t>(file, "Некорректное чтение аргумента (размер матрицы)");
+	AssertIsValidSize(matrixSize);
+
+	AdjacencyMatrix matrix(matrixSize, std::vector<int>(matrixSize, 0));
+
+	size_t from, to;
+	std::string line;
+	while (file >> from >> line >> to)
+	{
+		if (line != "--")
+		{
+			throw std::runtime_error("Некорректный формат строки: ожидается '->'");
+		}
+		from--;
+		to--;
+		AssertIsValidNumbers(from, to, matrixSize);
+
+		matrix[from][to] = matrix[to][from] = 1;
+	}
+
+	AssertIsStreamCorrect(file);
+	Graph graph(matrix);
+
+	return graph;
+}
+
+template <typename T> T FileToGraphAdapter::SafeRead(std::ifstream& file, const std::string& errorMessage)
+{
+	T value;
+	if (!(file >> value))
+	{
+		throw std::runtime_error(errorMessage);
+	}
+	return value;
+}
+
+void FileToGraphAdapter::AssertIsFileOpen(std::ifstream& file, const std::string& fileName) const
+{
+	if (!file.is_open())
+	{
+		throw std::runtime_error("Невозможно открыть файл: " + fileName);
+	}
+}
+
+void FileToGraphAdapter::AssertIsStreamCorrect(std::ifstream& file) const
+{
+	if (file.fail() && !file.eof())
+	{
+		throw std::runtime_error("Ошибка чтения данных из файла");
+	}
+}
+
+void FileToGraphAdapter::AssertIsValidSize(size_t size) const
+{
+	if (size <= 0)
+	{
+		throw std::runtime_error("Некорректный размер матрицы");
+	}
+}
+
+void FileToGraphAdapter::AssertIsValidNumbers(size_t from, size_t to, size_t matrixSize) const
+{
+	if (from >= matrixSize || to >= matrixSize)
+	{
+		throw std::runtime_error("Некорректные номера вершин");
 	}
 }
