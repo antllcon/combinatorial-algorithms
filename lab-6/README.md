@@ -1,0 +1,1 @@
+g++ -Wall *.cpp -o aco; ./aco
