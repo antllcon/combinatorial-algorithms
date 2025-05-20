@@ -1,63 +1,52 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include "../Segment.h"
-#include "../class-lay/Lay.h"
+#include "matrix.h"
 #include <fstream>
-#include <gtest/gtest_prod.h>
 #include <stack>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
-enum class color
-{
-	white,
-	gray,
-	black
-};
-
-struct TimeVertex
-{
-	color state = color::white;
-	int entryTime = -1;
-	int exitTime = -1;
-};
-
-using AdjacencyMatrix = std::vector<std::vector<double>>;
-using TimeList = std::vector<TimeVertex>;
-using StateList = std::vector<color>;
+using VertexList = std::vector<int>;
 
 class Graph
 {
-
 public:
-	Graph(const AdjacencyMatrix& matrix);
+	Graph(const Matrix& matrix);
+	Graph(int vetexCount, double value);
 	~Graph() = default;
 
-	void SetValue(int i, int j, double value);
-	AdjacencyMatrix GetMatrix() const;
-	TimeList DeepthFirstSearch();
-	VertexList GetCycle(const AdjacencyMatrix& matrix);
-	bool IsPlanarGraph();
+	std::vector<double>& operator[](int row);
+	const std::vector<double>& operator[](int row) const;
+
+	int GetSize() const;
+	Matrix GetMatrix() const;
 	void PrintGraph() const;
-	const AdjacencyMatrix& CreateVisibilityGraph();
+	bool IsEmpty() const;
 
 private:
-	void AddPath(VertexList& planarGraph, const VertexList& path);
-	void DeepthFirstSearchVisit(size_t number, TimeList& list, size_t& time);
-	bool DeepthFirstSearchVisit(size_t i,
-		StateList& list,
-		VertexList& parent,
-		VertexList& cycle,
-		const AdjacencyMatrix& currentMatrix);
+	Matrix m_matrix;
+};
 
-	void AssertIsMatrixSize(int vertexCount);
-	void AssertIsMatrixSquare(const AdjacencyMatrix& matrix);
+using Vertex = std::pair<int, int>;
+using Coordinates = std::vector<Vertex>;
+
+/// @brief Класс адаптер
+class FileToGraphAdapter
+{
+public:
+	Graph ConvertEdgeListToMatrix(const std::string& fileName);
 
 private:
-	AdjacencyMatrix matrix;
-	int vertexCount;
+	Matrix ReadMatrix(std::ifstream& file, size_t matrixSize) const;
+
+	template <typename T>
+	static T SafeRead(std::ifstream& file, const std::string& errorMessage);
+	void AssertIsFileOpen(std::ifstream& file, const std::string& fileName) const;
+	void AssertIsStreamCorrect(std::ifstream& file) const;
+	void AssertIsValidSize(size_t size) const;
+	void AssertIsValidNumbers(size_t from, size_t to, size_t matrixSize) const;
 };
 
 #endif // GRAPH_H

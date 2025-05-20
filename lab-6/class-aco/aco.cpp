@@ -1,179 +1,131 @@
 #include "aco.h"
+#include "../constants.h"
 
-ACO::ACO(Graph graph, int numAnts, int numCities, int numIterations)
-	: m_visibility(AdjacencyMatrix(numCities))
-	, m_pheromones(AdjacencyMatrix(numCities))
-	, m_deltaPheromones(AdjacencyMatrix(numCities))
-	, m_probs(AdjacencyMatrix(numCities))
+ACO::ACO(Graph graph)
+	: m_graph(graph)
 {
-	// Создание графа видимости
-	m_visibility = graph.CreateVisibilityGraph();
+	auto count = m_graph.GetSize();
+	Matrix matrix(count, constants::pheromone);
+	m_pheromone = std::move(matrix);
+}
 
-	// Инициализация феромонов
-	for (int i = 0; i < numCities; i++)
+void ACO::CreateAnts()
+{
+	// Количество муравьев должно быть равно
+	// количеству вершин графа
+	auto count = m_graph.GetSize();
+	m_ants.resize(count);
+
+	for (size_t i = 0; i != count; ++i)
 	{
-		for (int j = 0; j < numCities; j++)
-		{
-			m_pheromones.SetValue(i, j, constants::pheromone);
-		}
-	}
-
-	// Инициализация лучшего маршрута
-	m_bestRoute = std::vector<int>(numCities, std::numeric_limits<int>::max());
-
-	// Создание муравьев
-	for (int k = 0; k < numAnts; ++k)
-	{
-		m_ants.insert(Ant());
+		m_ants[i] = Ant(i);
 	}
 }
 
-// int ACO::ValidRoute(Ant& ant, int iteration)
-// {
-// 	for (int i = 0; i < GetCitiesCount() - 1; i++)
-// 	{
-// 		int cityi = ROUTES[antk][i];
-// 		int cityj = ROUTES[antk][i + 1];
-// 		if (cityi < 0 || cityj < 0)
-// 		{
-// 			return -1;
-// 		}
-// 		if (!exists(cityi, cityj))
-// 		{
-// 			return -2;
-// 		}
-// 		for (int j = 0; j < i - 1; j++)
-// 		{
-// 			if (ROUTES[antk][i] == ROUTES[antk][j])
-// 			{
-// 				return -3;
-// 			}
-// 		}
-// 	}
-
-// 	if (!exists(INITIALCITY, ROUTES[antk][NUMBEROFCITIES - 1]))
-// 	{
-// 		return -4;
-// 	}
-
-// 	return 0;
-// }
-
-void ACO::Optimize(int numIterations)
+void ACO::UpdateGlobalPheromone(const Matrix& localPheromone)
 {
-	for (int iterations = 1; iterations <= numIterations; ++iterations)
+	int size = localPheromone.GetSize();
+
+	for (int from = 0; from != size; ++from)
 	{
-		for (int k = 0; k < GetAntsCount(); ++k)
+		for (int to = 0; to != size; ++to)
 		{
+			m_pheromone[from][to] = constants::weathering * m_pheromone[from][to]
+				+ localPheromone[from][to];
 
-			// 1. Формируем маршрут
-
-			m_ants[k].ClearRoute();
-			m_ants[k].AddCity(startCity);
-
-			Route route;
-			do
+			if (m_pheromone[from][to] < 0.01 and from != to)
 			{
-				route = FindRoute(k);
-			} while (!ValidRoute(route));
-
-			// 2) Сохраняем маршрут внутрь объекта Ant
-			m_ants[k].SetRoute(route);
-
-			// 3) Обновляем лушчий маршрут
-			if (LengthRoute(route) < m_bestRoute)
-			{
-				m_bestRoute = route;
+				m_pheromone[from][to] = 0.01;
 			}
 		}
-
-		cout << endl << "updating PHEROMONES . . .";
-		updatePHEROMONES();
-		cout << " done!" << endl << endl;
-		printPHEROMONES();
-
-		for (int i = 0; i < NUMBEROFANTS; i++)
-		{
-			for (int j = 0; j < NUMBEROFCITIES; j++)
-			{
-				ROUTES[i][j] = -1;
-			}
-		}
-
-		cout << endl << "ITERATION " << iterations << " HAS ENDED!" << endl << endl;
 	}
 }
 
-Route ACO::FindRoute(int antk)
+AntPath ACO::Optimize()
 {
-	Route route;
-	route.reserve(GetCitiesCount());
-
-	// 1) Начинаем из 0 города
-	int current = 0;
-	route.push_back(current);
-
-	// 2) Пометка посещённых городов
-	std::vector<bool> visited(GetCitiesCount(), false);
-	visited[current] = true;
-
-	// 3) Каждый следующий город
-	for (int step = 1; step < GetCitiesCount(); ++step)
+	std::cout << "Начало поиска пути" << std::endl;
+	if (m_graph.IsEmpty())
 	{
-		// Собираем пары (вероятность, город) для всех доступных непосещённых соседей
-		std::vector<std::pair<double, int>> probs;
-		probs.reserve(GetCitiesCount());
-
-		double sum = 0.0;
-		auto neigh = m_visibility.Neighbors(current);
-		for (int nxt : neigh)
-		{
-			if (visited[nxt])
-				continue;
-
-			double tau
-				= std::pow(m_pheromones.Weight(current, nxt), constants::alpha);
-			double eta = std::pow(m_visibility.Weight(current, nxt), constants::beta);
-			double w = tau * eta;
-			probs.emplace_back(w, nxt);
-			sum += w;
-		}
-
-		// Если тупик — возвращаем неполный маршрут
-		if (probs.empty())
-		{
-			return route;
-		}
-
-		// Заполняем m_probs - ?
-		for (auto& p : probs)
-		{
-			m_probs.SetValue(current, p.second, p.first);
-		}
-
-		// Случайный выбор на основе относительных весов
-		double xi = randoms->Uniforme() * sum;
-		double acc = 0.0;
-		int chosen = probs.back().second; // на случай погрешностей
-		for (auto& p : probs)
-		{
-			acc += p.first;
-			if (acc >= xi)
-			{
-				chosen = p.second;
-				break;
-			}
-		}
-
-		// Добавляем в маршрут
-		route.push_back(chosen);
-		visited[chosen] = true;
-		current = chosen;
+		return {};
 	}
 
-	return route;
+	int count = m_graph.GetSize();
+	// int numIterations = count;
+	int numIterations = 100;
+	int counter = 0;
+
+	AntPath bestPath;
+	bestPath.distance = std::numeric_limits<double>::max();
+
+	while (counter++ != numIterations)
+	{
+		// std::cout << "Итерация №" << counter << std::endl;
+		Matrix localPheromoneUpdate(count, constants::pheromone);
+
+		CreateAnts();
+		// std::cout << "Муравьи созданы" << std::endl;
+
+		ResearchAnts(bestPath, localPheromoneUpdate, counter, count);
+		// std::cout << "Муравьи все исследовали" << std::endl;
+
+		UpdateGlobalPheromone(localPheromoneUpdate);
+		// std::cout << "Муравьи оставили ферамоны" << std::endl;
+	}
+
+	return bestPath;
 }
 
-int ACO::GetCitiesCount() const { return m_visibility.GetMatrix().size(); }
+void ACO::ResearchAnts(AntPath& bestPath,
+	Matrix& localPheromoneUpdate,
+	int& counter,
+	int countGraphVetices)
+{
+	for (auto& ant : m_ants)
+	{
+		while (ant.GetMove())
+		{
+			ant.MakeChoice(m_graph, m_pheromone);
+		}
 
-int ACO::GetAntsCount() const { return static_cast<int>(m_ants.size()); }
+		AntPath path = ant.GetBestPath();
+		int countVertices = path.vertices.size();
+		// std::cout << "Муравей нашел свой путь" << std::endl;
+
+		if (countVertices != countGraphVetices + 1)
+		{
+			// std::cout << "Путь недостаточно большой" << std::endl;
+			continue;
+		}
+
+		// Проверка на корректность индексов
+		if (countVertices < 2)
+		{
+			// std::cout << "Ошибка: путь слишком короткий!" << std::endl;
+			continue;
+		}
+
+		if (bestPath.distance > path.distance)
+		{
+			bestPath = std::move(path);
+			counter = 0;
+		}
+		// std::cout << "Лучший путь обновлен" << std::endl;
+
+		// for (auto i : bestPath.vertices)
+		// {
+		// 	std::cout << i << " ";
+		// }
+		// std::cout << std::endl;
+
+		for (int v = 0; v != countVertices - 1; ++v)
+		{
+			int from = bestPath.vertices[v];
+			int to = bestPath.vertices[v + 1];
+
+			if (from != to)
+			{
+				localPheromoneUpdate[from][to] += constants::q / path.distance;
+			}
+		}
+	}
+}
