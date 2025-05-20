@@ -1,13 +1,12 @@
 #!/bin/bash
 
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ -z "$1" ]; then
   echo "Ошибка: Не корректно указаны аргументы."
   echo "Используй: ./run.sh <номер лабы>"
   exit 1
 fi
 
 NUM_LAB=$1
-TASK_NAME=$2
 
 TASK_DIR="lab-$NUM_LAB"
 
