@@ -17,8 +17,7 @@ GeneticSetCoverSolver::GeneticSetCoverSolver(
 	rng.seed(system_clock::now().time_since_epoch().count());
 }
 
-// Инициализация случайной популяции
-void GeneticSetCoverSolver::initialize_population()
+void GeneticSetCoverSolver::InitPopulation()
 {
 	population.resize(population_size);
 	std::uniform_int_distribution<int> dist(0, 1);
@@ -30,12 +29,12 @@ void GeneticSetCoverSolver::initialize_population()
 		{
 			population[i][j] = dist(rng);
 		}
-		repair_solution(population[i]);
+		RepairSolution(population[i]);
 	}
 }
 
 // Вычисление стоимости решения
-double GeneticSetCoverSolver::calculate_cost(const std::vector<bool>& solution)
+double GeneticSetCoverSolver::CalcCost(const Genome& solution)
 {
 	double cost = 0.0;
 	for (int j = 0; j < problem.n; ++j)
@@ -49,7 +48,7 @@ double GeneticSetCoverSolver::calculate_cost(const std::vector<bool>& solution)
 }
 
 // Проверка, является ли решение допустимым (покрывает все элементы)
-bool GeneticSetCoverSolver::is_feasible(const std::vector<bool>& solution)
+bool GeneticSetCoverSolver::IsFeasible(const Genome& solution)
 {
 	for (int i = 0; i < problem.m; ++i)
 	{
@@ -68,9 +67,9 @@ bool GeneticSetCoverSolver::is_feasible(const std::vector<bool>& solution)
 }
 
 // Восстановление допустимости решения
-void GeneticSetCoverSolver::repair_solution(std::vector<bool>& solution)
+void GeneticSetCoverSolver::RepairSolution(Genome& solution)
 {
-	std::vector<bool> covered(problem.m, false);
+	Genome covered(problem.m, false);
 	std::vector<int> selected_subsets;
 
 	// Собираем уже выбранные подмножества
@@ -100,7 +99,7 @@ void GeneticSetCoverSolver::repair_solution(std::vector<bool>& solution)
 	if (all_covered)
 	{
 		// Удаляем избыточные подмножества
-		remove_redundant_subsets(solution, covered);
+		RemoveRedundantSubsets(solution, covered);
 		return;
 	}
 
@@ -167,12 +166,11 @@ void GeneticSetCoverSolver::repair_solution(std::vector<bool>& solution)
 	}
 
 	// Удаляем избыточные подмножества
-	remove_redundant_subsets(solution, covered);
+	RemoveRedundantSubsets(solution, covered);
 }
 
 // Удаление избыточных подмножеств
-void GeneticSetCoverSolver::remove_redundant_subsets(
-	std::vector<bool>& solution, std::vector<bool>& covered)
+void GeneticSetCoverSolver::RemoveRedundantSubsets(Genome& solution, Genome& covered)
 {
 	// Сортируем подмножества в порядке убывания стоимости
 	std::vector<std::pair<double, int>> subsets;
@@ -234,17 +232,17 @@ void GeneticSetCoverSolver::remove_redundant_subsets(
 }
 
 // Вычисление значений приспособленности для всей популяции
-void GeneticSetCoverSolver::evaluate_population()
+void GeneticSetCoverSolver::EvalutePopulation()
 {
 	fitness_values.resize(population_size);
 	for (int i = 0; i < population_size; ++i)
 	{
-		fitness_values[i] = calculate_cost(population[i]);
+		fitness_values[i] = CalcCost(population[i]);
 	}
 }
 
 // Турнирный отбор
-int GeneticSetCoverSolver::tournament_selection(int tournament_size)
+int GeneticSetCoverSolver::TournamentSelection(int tournament_size)
 {
 	std::uniform_int_distribution<int> dist(0, population_size - 1);
 	int best = dist(rng);
@@ -264,10 +262,9 @@ int GeneticSetCoverSolver::tournament_selection(int tournament_size)
 }
 
 // Улучшенный оператор кроссовера (из статьи)
-std::vector<bool> GeneticSetCoverSolver::crossover(
-	const std::vector<bool>& parent1, const std::vector<bool>& parent2)
+Genome GeneticSetCoverSolver::Crossover(const Genome& parent1, const Genome& parent2)
 {
-	std::vector<bool> child(problem.n);
+	Genome child(problem.n);
 	std::vector<double> p0(problem.n, 0.0), p1(problem.n, 0.0);
 
 	// Вычисляем частоты генов в популяции
@@ -285,8 +282,8 @@ std::vector<bool> GeneticSetCoverSolver::crossover(
 		p1[j] = static_cast<double>(count1) / population_size;
 	}
 
-	double f1 = calculate_cost(parent1);
-	double f2 = calculate_cost(parent2);
+	double f1 = CalcCost(parent1);
+	double f2 = CalcCost(parent2);
 
 	for (int j = 0; j < problem.n; ++j)
 	{
@@ -311,7 +308,7 @@ std::vector<bool> GeneticSetCoverSolver::crossover(
 }
 
 // Оператор мутации с переменной частотой
-void GeneticSetCoverSolver::mutate(std::vector<bool>& solution)
+void GeneticSetCoverSolver::Mutate(Genome& solution)
 {
 	std::vector<double> p0(problem.n, 0.0), p1(problem.n, 0.0);
 	std::vector<double> entropy(problem.n, 0.0);
@@ -362,7 +359,7 @@ void GeneticSetCoverSolver::mutate(std::vector<bool>& solution)
 }
 
 // Замена популяции (steady-state replacement)
-void GeneticSetCoverSolver::replace_population(const std::vector<bool>& offspring)
+void GeneticSetCoverSolver::ReplacePopulation(const Genome& offspring)
 {
 	// Находим среднюю приспособленность
 	double avg_fitness = 0.0;
@@ -387,41 +384,40 @@ void GeneticSetCoverSolver::replace_population(const std::vector<bool>& offsprin
 		std::uniform_int_distribution<int> dist(0, candidates.size() - 1);
 		int replace_index = candidates[dist(rng)];
 		population[replace_index] = offspring;
-		fitness_values[replace_index] = calculate_cost(offspring);
+		fitness_values[replace_index] = CalcCost(offspring);
 	}
 }
 
 // Основной метод решения
-std::vector<bool> GeneticSetCoverSolver::solve()
+Genome GeneticSetCoverSolver::Solve()
 {
 	auto start_time = high_resolution_clock::now();
 
 	// Инициализация популяции
-	initialize_population();
-	evaluate_population();
+	InitPopulation();
+	EvalutePopulation();
 
 	int generation = 0;
 	int no_improvement = 0;
 	double best_fitness = *min_element(fitness_values.begin(), fitness_values.end());
-	std::vector<bool> best_solution
+	Genome best_solution
 		= population[min_element(fitness_values.begin(), fitness_values.end())
 			- fitness_values.begin()];
 
 	while (generation < max_generations && no_improvement < 50)
 	{
 		// Выбор родителей
-		int parent1 = tournament_selection();
-		int parent2 = tournament_selection();
+		int parent1 = TournamentSelection();
+		int parent2 = TournamentSelection();
 
 		// Кроссовер
-		std::vector<bool> offspring
-			= crossover(population[parent1], population[parent2]);
+		Genome offspring = Crossover(population[parent1], population[parent2]);
 
 		// Мутация
-		mutate(offspring);
+		Mutate(offspring);
 
 		// Восстановление допустимости
-		repair_solution(offspring);
+		RepairSolution(offspring);
 
 		// Проверяем, есть ли уже такая особь в популяции
 		bool duplicate = false;
@@ -437,7 +433,7 @@ std::vector<bool> GeneticSetCoverSolver::solve()
 		if (!duplicate)
 		{
 			// Замена в популяции
-			replace_population(offspring);
+			ReplacePopulation(offspring);
 
 			// Обновляем лучший результат
 			double current_best
@@ -462,11 +458,11 @@ std::vector<bool> GeneticSetCoverSolver::solve()
 	auto end_time = high_resolution_clock::now();
 	auto duration = duration_cast<milliseconds>(end_time - start_time);
 
-	std::cout << "Algorithm finished in " << generation << " generations ("
+	std::cout << "Алгоритм закончен за " << generation << " генераций ("
 			  << duration.count() << " ms)" << std::endl;
-	std::cout << "Best solution cost: " << best_fitness << std::endl;
-	std::cout << "Solution is feasible: "
-			  << (is_feasible(best_solution) ? "YES" : "NO") << std::endl;
+	std::cout << "Стоимость лучшего решения: " << best_fitness << std::endl;
+	std::cout << "Решение нормальное? " << (IsFeasible(best_solution) ? "Да" : "Нет")
+			  << std::endl;
 
 	return best_solution;
 }

@@ -4,6 +4,8 @@
 #include <random>
 #include <vector>
 
+using Genome = std::vector<bool>;
+
 struct SetCoverProblem
 {
 	int m;							  // Количество элементов
@@ -18,47 +20,45 @@ public:
 	GeneticSetCoverSolver(
 		const SetCoverProblem& problem, int pop_size, int max_gen, double mut_rate);
 
-	// Инициализация случайной популяции
-	void initialize_population();
+	void InitPopulation();
 
 	// Вычисление стоимости решения
-	double calculate_cost(const std::vector<bool>& solution);
+	double CalcCost(const Genome& solution);
 
 	// Проверка, является ли решение допустимым (покрывает все элементы)
-	bool is_feasible(const std::vector<bool>& solution);
+	bool IsFeasible(const Genome& solution);
 
 	// Восстановление допустимости решения
-	void repair_solution(std::vector<bool>& solution);
+	void RepairSolution(Genome& solution);
 
 	// Удаление избыточных подмножеств
-	void remove_redundant_subsets(
-		std::vector<bool>& solution, std::vector<bool>& covered);
+	void RemoveRedundantSubsets(Genome& solution, Genome& covered);
 
 	// Вычисление значений приспособленности для всей популяции
-	void evaluate_population();
+	void EvalutePopulation();
 
 	// Турнирный отбор
-	int tournament_selection(int tournament_size = 3);
+	int TournamentSelection(int tournament_size = 3);
 
-	std::vector<bool> crossover(
-		const std::vector<bool>& parent1, const std::vector<bool>& parent2);
+	Genome Crossover(const Genome& parent1, const Genome& parent2);
 
 	// Оператор мутации с переменной частотой
-	void mutate(std::vector<bool>& solution);
+	void Mutate(Genome& solution);
 
 	// Замена популяции (steady-state replacement)
-	void replace_population(const std::vector<bool>& offspring);
+	void ReplacePopulation(const Genome& offspring);
 
 	// Основной метод решения
-	std::vector<bool> solve();
+	Genome Solve();
 
 private:
-	SetCoverProblem problem;
-	int population_size;
-	int max_generations;
-	double mutation_rate;
-	std::vector<std::vector<bool>> population;
-	std::vector<double> fitness_values;
+	SetCoverProblem problem;		// Параметры задачи
+	int population_size;			// Размер популяции
+	int max_generations;			// Число поколений
+	double mutation_rate;			// Вероятность мутации
+	std::vector<Genome> population; // Текущаяя популяция геномов
+	std::vector<double> fitness_values; // Преспособленность решения
+
 	std::mt19937 rng;
 };
 
