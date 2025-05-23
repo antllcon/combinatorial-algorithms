@@ -1,5 +1,5 @@
-#include "genetic.h"
-#include "chrono"
+#include "Genetic.h"
+#include "../class-chrono/Timer.h"
 #include <algorithm>
 #include <iostream>
 #include <limits>
@@ -391,7 +391,7 @@ void GeneticSetCoverSolver::ReplacePopulation(const Genome& offspring)
 // Основной метод решения
 Genome GeneticSetCoverSolver::Solve()
 {
-	auto start_time = high_resolution_clock::now();
+	Timer timer("Генетический алгоритм");
 
 	// Инициализация популяции
 	InitPopulation();
@@ -455,14 +455,21 @@ Genome GeneticSetCoverSolver::Solve()
 		generation++;
 	}
 
-	auto end_time = high_resolution_clock::now();
-	auto duration = duration_cast<milliseconds>(end_time - start_time);
-
-	std::cout << "Алгоритм закончен за " << generation << " генераций ("
-			  << duration.count() << " ms)" << std::endl;
 	std::cout << "Стоимость лучшего решения: " << best_fitness << std::endl;
 	std::cout << "Решение нормальное? " << (IsFeasible(best_solution) ? "Да" : "Нет")
 			  << std::endl;
 
 	return best_solution;
+}
+
+void GeneticSetCoverSolver::Print(int n, const Genome& solution)
+{
+	for (int j = 0; j < n; ++j)
+	{
+		if (solution[j])
+		{
+			std::cout << j + 1 << " ";
+		}
+	}
+	std::cout << std::endl;
 }

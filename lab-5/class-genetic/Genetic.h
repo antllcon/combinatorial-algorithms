@@ -51,12 +51,14 @@ public:
 	// Основной метод решения
 	Genome Solve();
 
+	static void Print(int n, const Genome& solution);
+
 private:
-	SetCoverProblem problem;		// Параметры задачи
-	int population_size;			// Размер популяции
-	int max_generations;			// Число поколений
-	double mutation_rate;			// Вероятность мутации
-	std::vector<Genome> population; // Текущаяя популяция геномов
+	SetCoverProblem problem;			// Параметры задачи
+	int population_size;				// Размер популяции
+	int max_generations;				// Число поколений
+	double mutation_rate;				// Вероятность мутации
+	std::vector<Genome> population;		// Текущаяя популяция геномов
 	std::vector<double> fitness_values; // Преспособленность решения
 
 	std::mt19937 rng;

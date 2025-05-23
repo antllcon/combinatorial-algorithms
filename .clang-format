@@ -37,7 +37,7 @@ BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: true
 BreakAfterJavaFieldAnnotations: false
 BreakStringLiterals: true
-ColumnLimit:     86
+ColumnLimit:     0
 CommentPragmas:  '^ IWYU pragma:'
 BreakBeforeInheritanceComma: true
 FixNamespaceComments: true
